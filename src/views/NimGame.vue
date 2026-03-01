@@ -1,76 +1,69 @@
 <template>
   <div
-    class="min-h-screen bg-gradient-to-br from-[#0b0f1a] to-[#05070d] text-gray-200 flex"
+    class="h-screen overflow-hidden bg-gradient-to-br from-[#0b0f1a] to-[#05070d] text-gray-200 flex"
   >
-
     <!-- LEFT PANEL -->
     <aside
-      class="w-72 border-r border-white/10 p-4 flex flex-col justify-between"
+      class="w-72 border-r border-white/10 p-4 flex flex-col gap-6"
     >
       <div>
-
         <h2 class="text-xs tracking-widest text-gray-400 mb-3">
           CURRENT MATCH
         </h2>
 
         <div class="space-y-2">
           <PlayerCard
-            :name="props.gameMode==='PVP' ? 'Player 1' : 'Player 1 (You)'"
-            :status="currentPlayer==='PLAYER' ? 'CURRENT TURN' : 'WAITING'"
-            :active="currentPlayer==='PLAYER'"
+            :name="props.gameMode === 'PVP' ? 'Player 1' : 'Player 1 (You)'"
+            :status="currentPlayer === 1 ? 'CURRENT TURN' : 'WAITING'"
+            :active="currentPlayer === 1"
           />
+
           <PlayerCard
-            :name="props.gameMode==='PVP' ? 'Player 2' : 'The Master (AI)'"
-            :status="currentPlayer==='AI' ? 'CURRENT TURN' : 'WAITING'"
-            :active="currentPlayer==='AI'"
+            :name="props.gameMode === 'PVP' ? 'Player 2' : 'The Master (AI)'"
+            :status="currentPlayer === 2 ? 'CURRENT TURN' : 'WAITING'"
+            :active="currentPlayer === 2"
           />
         </div>
-
+        <div class="mt-2">
+          <Instructor :gameRules="gameRules" />
+        </div>
       </div>
-
     </aside>
 
-
-
     <!-- CENTER -->
-    <main class="flex-1 flex flex-col items-center justify-center relative">
+    <main class="flex-1 flex flex-col overflow-hidden relative">
+      <!-- HEADER -->
+      <div class="text-center pt-6">
+        <h1 class="text-2xl font-semibold">Pile Selection</h1>
 
-      <h1 class="text-2xl font-semibold mb-1">
-        Pile Selection
-      </h1>
+        <p class="text-gray-400 text-sm mt-2">
+          Choose any number of stones (from left to right) from a single pile.
+        </p>
+      </div>
 
-      <p class="text-gray-400 text-sm mb-10">
-        Choose any number of stones (from left to right) from a single pile to remove.
-      </p>
+      <!-- PILES AREA -->
+      <div class="flex-1 flex items-center justify-center overflow-hidden px-6">
+        <TransitionGroup
+          name="pile"
+          tag="div"
+          class="flex flex-wrap justify-center gap-5 max-w-full"
+        >
+          <Pile
+            v-for="(pile, i) in heaps"
+            :key="i"
+            :label="'Pile ' + String.fromCharCode(65 + i)"
+            :count="pile"
+            :index="i"
+            :selected="
+              selectedMove?.heapIndex === i ? selectedMove.removeCount : 0
+            "
+            @remove="playerMove"
+          />
+        </TransitionGroup>
+      </div>
 
-
-
-      <!-- PILES -->
-      <TransitionGroup
-      name="pile"
-      tag="div"
-      class="flex flex-wrap justify-center gap-8 max-w-6xl"
-      >
-
-      <Pile
-        v-for="(pile, i) in heaps"
-        :key="i"
-        :label="'Pile ' + String.fromCharCode(65+i)"
-        :count="pile"
-        :index="i"
-        :selected="selectedMove?.heapIndex===i
-                    ? selectedMove.removeCount
-                    : 0"
-        @remove="playerMove"
-      />
-
-      </TransitionGroup>
-
-
-
-      <!-- BUTTONS -->
-      <div class="mt-12 flex gap-4">
-
+      <!-- BUTTONS (ALWAYS VISIBLE) -->
+      <div class="pb-6 flex gap-4 justify-center">
         <button
           @click="endTurn"
           class="px-6 py-3 rounded-lg bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-500/30 flex items-center gap-2"
@@ -78,45 +71,39 @@
           ▶ End Turn
         </button>
 
-
         <button
           @click="resetGame"
           class="px-6 py-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10"
         >
           Reset
         </button>
-
       </div>
-
     </main>
 
-        <!-- WINNER POPUP -->
+    <!-- WINNER POPUP -->
 
-        <div
-        v-if="winner"
-        class="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm"
-        >
-
-        <div
-          class="bg-[#111827] p-8 rounded-xl border border-white/10 text-center space-y-5 w-80 shadow-2xl"
-        >
-
-          <h2 class="text-2xl font-semibold">
-
-          {{props.gameMode==="PVE" ? ( winner==="PLAYER"  ? "You Win!" : "AI Wins!") : 
-            ( winner==="PLAYER" ? "Player 1 Wins!" : "Player 2 Wins!")
+    <div
+      v-if="winner"
+      class="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+    >
+      <div
+        class="bg-[#111827] p-8 rounded-xl border border-white/10 text-center space-y-5 w-80 shadow-2xl"
+      >
+        <h2 class="text-2xl font-semibold">
+          {{
+            props.gameMode === "PVE"
+              ? winner === 1
+                ? "You Win!"
+                : "AI Wins!"
+              : winner === 1
+                ? "Player 1 Wins!"
+                : "Player 2 Wins!"
           }}
+        </h2>
 
-          </h2>
+        <p class="text-gray-400 text-sm">Game finished</p>
 
-
-          <p class="text-gray-400 text-sm">
-            Game finished
-          </p>
-
-
-          <div class="flex gap-3 justify-center">
-
+        <div class="flex gap-3 justify-center">
           <button
             @click="resetGame"
             class="px-6 py-3 rounded-lg bg-blue-600 hover:bg-blue-500"
@@ -124,114 +111,128 @@
             Play Again
           </button>
 
-
           <button
             @click="$emit('goMenu')"
             class="px-6 py-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10"
           >
             Menu
           </button>
-
-          </div>
-
         </div>
-
-
+      </div>
     </div>
   </div>
 </template>
 
-
-
 <script setup>
-
 import { ref } from "vue";
-
 import PlayerCard from "@/components/PlayerCard.vue";
+import Instructor from "@/components/Instructor.vue";
 import Pile from "@/components/Pile.vue";
-
-import { playerEndTurnNormal, aiMoveTurnNormal } from "@/store/startGame.js";
+import {
+  playerEndTurnNormal,
+  aiMoveTurnNormalEasy,
+  aiMoveTurnNormalHard,
+  playerEndTurnMisere,
+  aiMoveTurnMisereEasy,
+  aiMoveTurnMisereHard,
+} from "@/store/startGame.js";
 import { watch } from "vue";
-
-
 
 /* GAME STATE */
 
 const props = defineProps({
   gameSize: {
     type: String,
-    default: () => "SMALL"
   },
   gameMode: {
     type: String,
-    default: () => "PVE"
-  }
+  },
+  gameRules: {
+    type: String,
+  },
+  gameAI: {
+    type: String,
+  },
 });
 
-const heaps = ref(
-  createHeaps(props.gameSize)
-);
+const heaps = ref(createHeaps(props.gameSize));
+
+const gameMode = props.gameMode;
+const gameRules = props.gameRules;
+const gameAI = props.gameAI;
 
 watch(
   () => props.gameSize,
-  (newSize)=>{
+  (newSize) => {
     heaps.value = createHeaps(newSize);
     selectedMove.value = null;
-    currentPlayer.value = "PLAYER";
+    currentPlayer.value = 1;
     winner.value = null;
-  }
+  },
 );
 
 const selectedMove = ref(null);
 
-const currentPlayer = ref("PLAYER");
+/*
+Player 1 = 1
+Player 2 = AI = 2
+*/
+
+const currentPlayer = ref(1);
 
 const winner = ref(null);
 
-function createHeaps(mode){
+function createHeaps(size) {
+  if (size === "SMALL") return Array(3).fill(10);
 
-  if(mode==="SMALL")
-    return Array(3).fill(10);
+  if (size === "MEDIUM") return Array(5).fill(10);
 
-  if(mode==="MEDIUM")
-    return Array(5).fill(10);
-
-  if(mode==="LARGE")
-    return Array(10).fill(10);
-
+  if (size === "LARGE") return Array(10).fill(10);
 }
 
 /****************** GAME LOGIC ******************/
 
-function playerMove({heapIndex, removeCount}){
+function playerMove({ heapIndex, removeCount }) {
+  if (winner.value) return;
 
-  if(winner.value) return;
+  if (gameMode === "PVE" && currentPlayer.value !== 1) return;
 
-  if(props.gameMode==="PVE"
-  && currentPlayer.value!=="PLAYER")
-    return;
-
-  selectedMove.value={
+  selectedMove.value = {
     heapIndex,
-    removeCount
+    removeCount,
   };
-
 }
 
-function endTurn(){
+/* Main Logic */
+function endTurn() {
 
-  if(winner.value) return;
+  if (winner.value) return;
 
-  const result =
-  playerEndTurnNormal(
-    heaps.value,
-    selectedMove.value,
-    currentPlayer.value
-  );
+  let result = null;
 
+  // NORMAL
+  if (gameRules === "NORMAL") {
 
-  if(!result) return;
+    result = playerEndTurnNormal(
+      heaps.value,
+      selectedMove.value,
+      currentPlayer.value
+    );
 
+  }
+
+  // MISERE
+  if (gameRules === "MISERE") {
+
+    result = playerEndTurnMisere(
+      heaps.value,
+      selectedMove.value,
+      currentPlayer.value
+    );
+
+  }
+
+  if (!result) return;
 
   heaps.value = result.heaps;
 
@@ -242,61 +243,74 @@ function endTurn(){
   selectedMove.value = null;
 
 
-  if(props.gameMode==="PVE"
-  && currentPlayer.value==="AI"){
 
-  setTimeout(()=>{
+  // AI TURN
+  if (gameMode === "PVE" && currentPlayer.value === 2) {
 
-    const aiResult =
-    aiMoveTurnNormal(
-      heaps.value
-    );
+    setTimeout(() => {
 
-    if(!aiResult)
-      return;
+      let aiResult = null;
 
-    heaps.value = aiResult.heaps;
+      // NORMAL
+      if (gameRules === "NORMAL") {
 
-    winner.value = aiResult.winner;
+        if (gameAI === "EASY")
+          aiResult = aiMoveTurnNormalEasy(heaps.value);
 
-    currentPlayer.value = aiResult.currentPlayer;
+        if (gameAI === "HARD")
+          aiResult = aiMoveTurnNormalHard(heaps.value);
 
-  }, 1500);
+      }
+
+      // MISERE
+      if (gameRules === "MISERE") {
+
+        if (gameAI === "EASY")
+          aiResult = aiMoveTurnMisereEasy(heaps.value);
+
+        if (gameAI === "HARD")
+          aiResult = aiMoveTurnMisereHard(heaps.value);
+
+      }
+
+
+      if (!aiResult) return;
+
+      heaps.value = aiResult.heaps;
+
+      winner.value = aiResult.winner;
+
+      currentPlayer.value = aiResult.currentPlayer;
+
+    }, 1000);
 
   }
-
 }
 
-function resetGame(){
+function resetGame() {
+  heaps.value = createHeaps(props.gameSize);
 
-  // heaps.value=[...props.initialHeaps];
-  heaps.value=createHeaps(props.gameSize);
+  selectedMove.value = null;
 
-  selectedMove.value=null;
+  currentPlayer.value = 1;
 
-  currentPlayer.value="PLAYER";
-
-  winner.value=null;
-
+  winner.value = null;
 }
-
 </script>
 
 <style scoped>
+.pile-enter-active,
+.pile-leave-active {
+  transition: all 0.35s ease;
+}
 
-  .pile-enter-active,
-  .pile-leave-active {
-    transition: all 0.35s ease;
-  }
+.pile-enter-from {
+  opacity: 0;
+  transform: translateY(20px) scale(0.9);
+}
 
-  .pile-enter-from {
-    opacity: 0;
-    transform: translateY(20px) scale(0.9);
-  }
-
-  .pile-leave-to {
-    opacity: 0;
-    transform: translateY(-20px) scale(0.8);
-  }
-
+.pile-leave-to {
+  opacity: 0;
+  transform: translateY(-20px) scale(0.8);
+}
 </style>

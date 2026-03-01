@@ -24,6 +24,8 @@ body {
   v-if="screen==='GAME'"
   :gameMode="gameMode"
   :gameSize="gameSize"
+  :gameRules="gameRules"
+  :gameAI="gameAI"
   @goMenu="screen='MENU'"
   />
   
@@ -43,12 +45,15 @@ body {
   
   const gameMode = ref("PVP");
   const gameSize = ref("MEDIUM");
-  
+  const gameRules = ref("NORMAL");
+  const gameAI = ref("EASY");
   
   function launchGame(data){
   
-    gameMode.value=data.mode;
     gameSize.value=data.size;
+    gameMode.value=data.mode;
+    gameRules.value=data.rule;
+    gameAI.value=data.ai;
   
     screen.value="GAME";
   

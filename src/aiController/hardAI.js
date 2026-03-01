@@ -1,5 +1,3 @@
-const { h } = require("vue");
-
 /**
  * Tính nim-sum
  */
